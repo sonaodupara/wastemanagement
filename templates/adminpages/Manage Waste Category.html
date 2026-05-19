@@ -1,0 +1,55 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+</head>
+<body>
+{% extends 'adminpages/index.html' %}
+{% block body %}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form  action="/myapp/adm_add_waste_category_post/" method="post">
+                    {% csrf_token %}
+                   <div class="form-group">
+                        <label for="password">Category</label>
+                        <select name="category" class="form-control">
+                            <option value="Plastic">Plastic</option>
+                            <option value="Papers">Papers</option>
+                            <option value="Iron">Iron</option>
+                            <option value="Furnitures">Furnitures</option>
+                            <option value="Wood">Wood</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Type</label>
+                        <select name="type" class="form-control">
+                            <option value="Biodegradable">Biodegradable</option>
+                            <option value="Not Biodegradable">Not Biodegradable</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Price</label>
+                        <input type="text" class="form-control" name="price" id="price" placeholder="Price" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Enter</button>
+                </form>
+                <div class="text-center mt-3">
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
