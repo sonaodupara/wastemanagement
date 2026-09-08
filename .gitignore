@@ -1,9 +1,46 @@
+# Environment & Secrets
+.env
+.env.local
+*.pem
+
+# Python & Django Bytecode / Caches
 __pycache__/
-*.pyc
-venv/
-db.sqlite3
-.idea/
-media/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Database & Storage
+*.sqlite3
+*.db
+db.sqlite3-journal
+
+# Media & Static Files
+media/*
+!media/.gitkeep
+staticfiles/
+*.log
+
+# Loose Test / Artifact Files
 *.jpg
+*.jpeg
+*.png
 *.pdf
 *.zip
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE & Editor Settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

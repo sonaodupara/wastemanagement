@@ -1,9 +1,13 @@
 from datetime import datetime
+import json
+import os
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 import google.generativeai as genai
 from PIL import Image
 
@@ -1001,104 +1005,95 @@ def chat_send(request, msg):
 
 
 
+@csrf_exempt
 def User_sendchat(request):
-    FROM_id=request.POST['from_id']
-    TOID_id=request.POST['to_id']
-    print(FROM_id)
-    print(TOID_id)
-    msg=request.POST['message']
+    FROM_id = request.POST['from_id']
+    TOID_id = request.POST['to_id']
+    msg = request.POST['message']
 
-    from  datetime import datetime
-    c=Chat()
-    c.FROMUSER_id=FROM_id
-    c.TOUSER_id=TOID_id
-    c.Message=msg
-    c.Date=datetime.now()
+    c = Chat()
+    c.FROMUSER_id = FROM_id
+    c.TOUSER_id = TOID_id
+    c.Message = msg
+    c.Date = datetime.now()
     c.save()
-    return JsonResponse({'status':"ok"})
+    return JsonResponse({'status': 'ok'})
 
 
+@csrf_exempt
 def User_viewchat(request):
     fromid = request.POST["from_id"]
-    print(fromid)
     toid = request.POST["to_id"]
-    print(toid)
-    # lmid = request.POST["lastmsgid"]
+
     from django.db.models import Q
 
-    res = Chat.objects.filter(Q(FROMUSER_id=fromid, TOUSER_id=toid) | Q(FROMUSER_id=toid, TOUSER_id=fromid)).order_by('id')
+    res = Chat.objects.filter(
+        Q(FROMUSER_id=fromid, TOUSER_id=toid) | Q(FROMUSER_id=toid, TOUSER_id=fromid)
+    ).order_by('id')
     l = []
 
     for i in res:
-        l.append({"id": i.id, "msg": i.Message, "from": i.FROMUSER_id, "Date": i.Date, "to": i.TOUSER_id})
+        l.append({
+            "id": i.id,
+            "msg": i.Message,
+            "from": i.FROMUSER_id,
+            "Date": i.Date,
+            "to": i.TOUSER_id,
+        })
 
-    return JsonResponse({"status":"ok",'data':l})
-
-# j=User.objects.get(username="farhank89434@gmail.com")
-# j.set_password("12345")
-# j.save()
+    return JsonResponse({"status": "ok", 'data': l})
 
 
+@csrf_exempt
 def userupload(request):
+    if "photo" not in request.FILES:
+        return JsonResponse({'status': 'error', 'message': 'No photo uploaded'}, status=400)
 
-    file= request.FILES["photo"]
-    from  datetime import  datetime
+    file = request.FILES["photo"]
+    fname = datetime.now().strftime("%Y%m%d%H%M%S") + ".jpg"
 
-    fname= datetime.now().strftime("%Y%m%d%H%M%S")+".jpg"
+    fs = FileSystemStorage(location=settings.MEDIA_ROOT)
+    saved_filename = fs.save(fname, file)
+    mpath = os.path.join(settings.MEDIA_ROOT, saved_filename)
 
-    fs=FileSystemStorage()
-    fs.save(fname,file)
+    api_key = getattr(settings, 'GEMINI_API_KEY', '') or os.getenv('GEMINI_API_KEY', '')
+    if not api_key:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'GEMINI_API_KEY is not configured in environment.'
+        }, status=500)
 
+    try:
+        genai.configure(api_key=api_key)
+        image = Image.open(mpath)
+        model = genai.GenerativeModel("gemini-flash-latest")
 
-    mpath="C:\\Users\\Saiph\\PycharmProjects\\wastemanagement\\media\\"+fname
-
-    key="AIzaSyDnXMN9qIcZIoQml8lAkm2-WhvE9JMD2Bo"
-
-    import google.generativeai as genai
-    from PIL import Image
-
-    genai.configure(api_key="AIzaSyCAAHs3rtoRSaPDg8vkr_ywenxWYdx0U0I")  # Replace with your actual key
-
-    f = r"C:\Riss\/opra\web\opra\media\20260102000746.jpg"
-    #######################################
-
-    import google.generativeai as genai
-    import json
-
-    image = Image.open(mpath)
-
-    model = genai.GenerativeModel("gemini-flash-latest")
-
-    prompt = """
-           Analyze this food image and respond ONLY in valid JSON.
-           Required JSON format:
-           {
-               "type of waste": "",
-
-           }
-           Do NOT add explanation.
-           """
-
-    response = model.generate_content(
-        [prompt, image],
-        stream=False
-    )
-
-    # Clean response (important if model adds formatting)
-    cleaned_text = response.text.strip()
-
-    # Convert to Python dictionary
-    data = json.loads(cleaned_text)
-
-
-    print(data)
-
-
-    return  JsonResponse(
+        prompt = """
+        Analyze this image for waste classification and respond ONLY in valid JSON format.
+        Required JSON format:
         {
-            'status':'ok',
-            'data':data['type of waste']
+            "type of waste": ""
         }
-    )
+        Do NOT add markdown formatting or extra text.
+        """
+
+        response = model.generate_content([prompt, image], stream=False)
+        cleaned_text = response.text.strip()
+        if cleaned_text.startswith("```json"):
+            cleaned_text = cleaned_text[7:]
+        if cleaned_text.endswith("```"):
+            cleaned_text = cleaned_text[:-3]
+        cleaned_text = cleaned_text.strip()
+
+        data = json.loads(cleaned_text)
+        return JsonResponse({
+            'status': 'ok',
+            'data': data.get('type of waste', 'Unknown')
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 

@@ -1,0 +1,13 @@
+# Core Framework
+Django>=5.0.0,<6.0.0
+
+# AI & Machine Learning Integrations
+google-generativeai>=0.8.0
+Pillow>=10.0.0
+
+# Environment & Configuration Management
+python-dotenv>=1.0.0
+
+# Database Connectivity (Optional if using SQLite)
+pymysql>=1.1.0
+mysqlclient>=2.2.0
